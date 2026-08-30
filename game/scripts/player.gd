@@ -9,11 +9,16 @@ signal hit
 @export var fire_interval: float = 0.3
 @export var bullet_scene: PackedScene = preload("res://scenes/bullet.tscn")
 
+const BLINK_INTERVAL := 0.1
+
 var screen_size: Vector2
 var target_position: Vector2
 var is_dragging: bool = false
+var blinking: bool = false
+var _blink_elapsed: float = 0.0
 
 @onready var fire_timer: Timer = $AutoFireTimer
+@onready var sprite: Sprite2D = $Sprite2D
 
 
 func _ready() -> void:
@@ -35,6 +40,12 @@ func _process(delta: float) -> void:
 		position = position.move_toward(target_position, move_speed * delta)
 	position.x = clamp(position.x, 16, screen_size.x - 16)
 	position.y = clamp(position.y, 16, screen_size.y - 16)
+
+	if blinking:
+		_blink_elapsed += delta
+		if _blink_elapsed >= BLINK_INTERVAL:
+			_blink_elapsed = 0.0
+			sprite.visible = not sprite.visible
 
 
 func _input(event: InputEvent) -> void:
@@ -71,7 +82,15 @@ func set_active(active: bool) -> void:
 	monitoring = active
 	visible = active
 	is_dragging = false
+	set_blinking(false)
 	if active:
 		fire_timer.start()
 	else:
 		fire_timer.stop()
+
+
+## 被弾後の無敵時間中、機体を点滅させて「今は無敵」だと分かるようにする
+func set_blinking(value: bool) -> void:
+	blinking = value
+	_blink_elapsed = 0.0
+	sprite.visible = true

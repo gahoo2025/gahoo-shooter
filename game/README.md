@@ -35,6 +35,13 @@ gahoo-shooterのゲーム本体。[Godot](https://godotengine.org/) 4系を想�
 
 `assets/backgrounds/background.png`（AI画像生成、宇宙・星雲柄、640×640、上下がシームレスに繋がるよう生成）を、同じテクスチャを縦に2枚重ねて下方向に流し続けることで、途切れなくスクロールしているように見せている（`scenes/background.tscn`・`scripts/background.gd`）。`main.tscn`の最初の子ノードとして配置し、自機・敵・弾より背面に描画される。
 
+## 演出（爆発エフェクト・被弾フィードバック）
+
+画像アセットを使わず、コードのみで実装。
+
+- **爆発エフェクト**（`scenes/explosion.tscn`・`scripts/explosion.gd`）：敵を撃破した位置に、広がりながらフェードアウトする円を3重に重ねて描画する簡易パーティクル。0.4秒で自動的に消える
+- **被弾フィードバック**：自機が敵に触れると、①画面全体が短時間（0.25秒）小刻みに揺れる（`main.gd`の`shake_time_left`、Main自身のpositionを揺らす。UIはCanvasLayerのため揺れの影響を受けない）、②無敵時間（1.5秒）の間、自機が0.1秒間隔で点滅する（`player.gd`の`set_blinking()`）
+
 ## 構成
 
 ```
@@ -45,7 +52,8 @@ game/
 │   ├── background.tscn  # 縦スクロール背景
 │   ├── player.tscn       # 自機
 │   ├── bullet.tscn       # 自機の弾
-│   └── enemy.tscn        # 雑魚敵
+│   ├── enemy.tscn        # 雑魚敵
+│   └── explosion.tscn   # 爆発エフェクト（画像不使用）
 ├── scripts/              # 上記シーンに対応するGDScript
 └── assets/
     ├── sprites/          # 自機・敵のスプライト画像（AI画像生成、背景透過処理済み）

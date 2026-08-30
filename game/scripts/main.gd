@@ -8,12 +8,15 @@ enum State { TITLE, PLAYING, GAME_OVER, CLEAR }
 const MAX_LIVES := 3
 const ENEMIES_TO_CLEAR := 10
 const INVINCIBLE_TIME := 1.5
+const SHAKE_DURATION := 0.25
+const SHAKE_STRENGTH := 6.0
 
 var state: State = State.TITLE
 var score: int = 0
 var lives: int = MAX_LIVES
 var defeated_count: int = 0
 var invincible: bool = false
+var shake_time_left: float = 0.0
 
 @onready var player: Area2D = $Player
 @onready var enemy_spawner: Node = $EnemySpawner
@@ -34,8 +37,20 @@ func _ready() -> void:
 	clear_screen.get_node("RestartButton").pressed.connect(start_game)
 	invincible_timer.wait_time = INVINCIBLE_TIME
 	invincible_timer.one_shot = true
-	invincible_timer.timeout.connect(func() -> void: invincible = false)
+	invincible_timer.timeout.connect(func() -> void:
+		invincible = false
+		player.set_blinking(false)
+	)
 	_show_title()
+
+
+func _process(delta: float) -> void:
+	if shake_time_left > 0.0:
+		shake_time_left -= delta
+		if shake_time_left > 0.0:
+			position = Vector2(randf_range(-SHAKE_STRENGTH, SHAKE_STRENGTH), randf_range(-SHAKE_STRENGTH, SHAKE_STRENGTH))
+		else:
+			position = Vector2.ZERO
 
 
 func start_game() -> void:
@@ -72,6 +87,8 @@ func _on_player_hit() -> void:
 	_update_labels()
 	invincible = true
 	invincible_timer.start()
+	player.set_blinking(true)
+	shake_time_left = SHAKE_DURATION
 	if lives <= 0:
 		_show_game_over()
 

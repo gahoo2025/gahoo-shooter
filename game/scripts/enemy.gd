@@ -5,6 +5,8 @@ extends Area2D
 
 signal defeated(score_value: int)
 
+const EXPLOSION_SCENE: PackedScene = preload("res://scenes/explosion.tscn")
+
 @export var speed: float = 160.0
 @export var score_value: int = 100
 
@@ -26,5 +28,12 @@ func _process(delta: float) -> void:
 func _on_area_entered(area: Area2D) -> void:
 	# collision_mask により、ここに来るのは自機の弾のみを想定
 	area.queue_free()
+	_spawn_explosion()
 	defeated.emit(score_value)
 	queue_free()
+
+
+func _spawn_explosion() -> void:
+	var explosion: Node2D = EXPLOSION_SCENE.instantiate()
+	explosion.position = position
+	get_parent().add_child(explosion)
