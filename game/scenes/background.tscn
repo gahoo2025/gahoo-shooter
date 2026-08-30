@@ -8,12 +8,12 @@ script = ExtResource("1")
 
 [node name="Tile1" type="Sprite2D" parent="."]
 position = Vector2(0, 0)
-scale = Vector2(0.75, 0.75)
+scale = Vector2(1.125, 1.125)
 texture = ExtResource("2")
 centered = false
 
 [node name="Tile2" type="Sprite2D" parent="."]
-position = Vector2(0, -480)
-scale = Vector2(0.75, 0.75)
+position = Vector2(0, -720)
+scale = Vector2(1.125, 1.125)
 texture = ExtResource("2")
 centered = false
