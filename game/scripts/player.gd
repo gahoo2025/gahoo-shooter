@@ -22,6 +22,7 @@ var _blink_elapsed: float = 0.0
 
 
 func _ready() -> void:
+	add_to_group("player")
 	screen_size = get_viewport().get_visible_rect().size
 	target_position = position
 	fire_timer.wait_time = fire_interval
@@ -71,6 +72,9 @@ func _on_fire_timer_timeout() -> void:
 
 func _on_area_entered(area: Area2D) -> void:
 	if area.is_in_group("enemies"):
+		hit.emit()
+	elif area.is_in_group("enemy_bullets"):
+		area.queue_free()
 		hit.emit()
 
 

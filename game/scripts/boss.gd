@@ -1,0 +1,86 @@
+class_name Boss
+extends Area2D
+
+## ステージ末尾のボス。既存の敵スプライトを拡大・色調変更して流用。
+## 画面上部まで降りてきたら左右に往復移動しつつ、自機を狙う弾を一定間隔で発射する。
+## 自機の弾に15回当たると撃破される。
+
+signal defeated(score_value: int)
+
+const EXPLOSION_SCENE: PackedScene = preload("res://scenes/explosion.tscn")
+const BULLET_SCENE: PackedScene = preload("res://scenes/boss_bullet.tscn")
+const BASE_TINT: Color = Color(0.75, 0.35, 0.85)
+
+@export var max_health: int = 15
+@export var score_value: int = 2000
+@export var move_speed: float = 100.0
+@export var fire_interval: float = 1.2
+@export var entry_y: float = 120.0
+
+var health: int
+var screen_size: Vector2
+var direction: int = 1
+var entered: bool = false
+
+@onready var fire_timer: Timer = $FireTimer
+@onready var sprite: Sprite2D = $Sprite2D
+
+
+func _ready() -> void:
+	add_to_group("enemies")
+	health = max_health
+	screen_size = get_viewport().get_visible_rect().size
+	area_entered.connect(_on_area_entered)
+	fire_timer.wait_time = fire_interval
+	fire_timer.timeout.connect(_fire)
+
+
+func _process(delta: float) -> void:
+	if not entered:
+		position.y += move_speed * delta
+		if position.y >= entry_y:
+			position.y = entry_y
+			entered = true
+			fire_timer.start()
+	else:
+		position.x += direction * move_speed * delta
+		if position.x < 60.0:
+			position.x = 60.0
+			direction = 1
+		elif position.x > screen_size.x - 60.0:
+			position.x = screen_size.x - 60.0
+			direction = -1
+
+
+func _on_area_entered(area: Area2D) -> void:
+	# collision_mask により、ここに来るのは自機の弾のみを想定
+	area.queue_free()
+	health -= 1
+	_flash_hit()
+	if health <= 0:
+		_spawn_explosion()
+		defeated.emit(score_value)
+		queue_free()
+
+
+func _flash_hit() -> void:
+	sprite.modulate = Color(1.0, 1.0, 1.0)
+	await get_tree().create_timer(0.08).timeout
+	if is_instance_valid(sprite):
+		sprite.modulate = BASE_TINT
+
+
+func _fire() -> void:
+	var player: Node = get_tree().get_first_node_in_group("player")
+	if player == null:
+		return
+	var bullet: Area2D = BULLET_SCENE.instantiate()
+	bullet.position = position + Vector2(0, 30)
+	bullet.velocity = (player.global_position - bullet.position).normalized()
+	get_parent().add_child(bullet)
+
+
+func _spawn_explosion() -> void:
+	var explosion: Node2D = EXPLOSION_SCENE.instantiate()
+	explosion.position = position
+	get_parent().add_child(explosion)

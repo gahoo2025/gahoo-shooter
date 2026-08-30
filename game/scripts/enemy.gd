@@ -1,26 +1,51 @@
+class_name Enemy
 extends Area2D
 
-## 雑魚敵（第1弾は直進のみの1種類）。
+## 雑魚敵。直進・ジグザグ（左右蛇行）・トラッカー（自機狙い）の3パターンに対応。
 ## 自機の弾に当たると消滅してスコアを加算する。画面下に抜けると自然消滅する。
+
+enum Pattern { STRAIGHT, ZIGZAG, TRACKER }
 
 signal defeated(score_value: int)
 
 const EXPLOSION_SCENE: PackedScene = preload("res://scenes/explosion.tscn")
 
+@export var pattern: Pattern = Pattern.STRAIGHT
 @export var speed: float = 160.0
 @export var score_value: int = 100
+@export var zigzag_amplitude: float = 60.0
+@export var zigzag_frequency: float = 2.0
+@export var tracker_turn_speed: float = 80.0
 
 var screen_size: Vector2
+var _elapsed: float = 0.0
+var _base_x: float = 0.0
 
 
 func _ready() -> void:
 	add_to_group("enemies")
 	screen_size = get_viewport().get_visible_rect().size
+	_base_x = position.x
 	area_entered.connect(_on_area_entered)
 
 
 func _process(delta: float) -> void:
+	_elapsed += delta
 	position.y += speed * delta
+
+	match pattern:
+		Pattern.ZIGZAG:
+			position.x = clampf(
+				_base_x + sin(_elapsed * zigzag_frequency) * zigzag_amplitude,
+				16.0,
+				screen_size.x - 16.0
+			)
+		Pattern.TRACKER:
+			var player: Node = get_tree().get_first_node_in_group("player")
+			if player:
+				var target_x: float = player.global_position.x
+				position.x = move_toward(position.x, target_x, tracker_turn_speed * delta)
+
 	if position.y > screen_size.y + 32:
 		queue_free()
 

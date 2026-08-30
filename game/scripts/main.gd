@@ -1,22 +1,31 @@
 extends Node2D
 
-## gahoo-shooter ゲーム進行管理（タイトル → プレイ → ゲームオーバー/クリア → タイトル）
-## 実装計画（gamedev/gahoo-shooter-plan-01.md）のミニマム動作版に対応。
+## gahoo-shooter ゲーム進行管理
+## タイトル → (ステージ1〜3：雑魚敵の波 → ボス) → 全ステージクリア → タイトル
+## 実装計画（gamedev/gahoo-shooter-plan-01.md・plan-02.md）に対応。
 
 enum State { TITLE, PLAYING, GAME_OVER, CLEAR }
 
 const MAX_LIVES := 3
-const ENEMIES_TO_CLEAR := 10
+const TOTAL_STAGES := 3
+const STAGE_BASE_ENEMY_COUNT := 8
+const STAGE_ENEMY_INCREMENT := 4
+const STAGE_TRANSITION_DURATION := 1.5
 const INVINCIBLE_TIME := 1.5
 const SHAKE_DURATION := 0.25
 const SHAKE_STRENGTH := 6.0
 
+const BOSS_SCENE: PackedScene = preload("res://scenes/boss.tscn")
+
 var state: State = State.TITLE
 var score: int = 0
 var lives: int = MAX_LIVES
+var current_stage: int = 1
 var defeated_count: int = 0
 var invincible: bool = false
+var boss_active: bool = false
 var shake_time_left: float = 0.0
+var stage_transition_time_left: float = 0.0
 
 @onready var player: Area2D = $Player
 @onready var enemy_spawner: Node = $EnemySpawner
@@ -24,6 +33,7 @@ var shake_time_left: float = 0.0
 @onready var bullet_container: Node2D = $BulletContainer
 @onready var score_label: Label = $UI/ScoreLabel
 @onready var lives_label: Label = $UI/LivesLabel
+@onready var stage_label: Label = $UI/StageLabel
 @onready var title_screen: Control = $UI/TitleScreen
 @onready var game_over_screen: Control = $UI/GameOverScreen
 @onready var clear_screen: Control = $UI/ClearScreen
@@ -52,17 +62,29 @@ func _process(delta: float) -> void:
 		else:
 			position = Vector2.ZERO
 
+	if stage_transition_time_left > 0.0:
+		stage_transition_time_left -= delta
+		if stage_transition_time_left <= 0.0:
+			stage_label.visible = false
+			enemy_spawner.configure_for_stage(current_stage)
+			enemy_spawner.start()
+
 
 func start_game() -> void:
 	score = 0
 	lives = MAX_LIVES
+	current_stage = 1
 	defeated_count = 0
 	invincible = false
+	boss_active = false
+	stage_transition_time_left = 0.0
+	stage_label.visible = false
 	state = State.PLAYING
 	_clear_container(enemy_container)
 	_clear_container(bullet_container)
 	player.position = Vector2(screen_center_x(), get_viewport().get_visible_rect().size.y - 100)
 	player.set_active(true)
+	enemy_spawner.configure_for_stage(current_stage)
 	enemy_spawner.start()
 	_update_labels()
 	title_screen.visible = false
@@ -71,13 +93,27 @@ func start_game() -> void:
 
 
 func _on_enemy_defeated(score_value: int) -> void:
-	if state != State.PLAYING:
+	if state != State.PLAYING or boss_active:
 		return
 	score += score_value
 	defeated_count += 1
 	_update_labels()
-	if defeated_count >= ENEMIES_TO_CLEAR:
+	if defeated_count >= _enemies_needed_for_stage(current_stage):
+		_spawn_boss()
+
+
+func _on_boss_defeated(score_value: int) -> void:
+	if state != State.PLAYING:
+		return
+	score += score_value
+	boss_active = false
+	_update_labels()
+	if current_stage >= TOTAL_STAGES:
 		_show_clear()
+	else:
+		current_stage += 1
+		defeated_count = 0
+		_start_stage_transition()
 
 
 func _on_player_hit() -> void:
@@ -93,10 +129,31 @@ func _on_player_hit() -> void:
 		_show_game_over()
 
 
+func _spawn_boss() -> void:
+	boss_active = true
+	enemy_spawner.stop()
+	var boss: Boss = BOSS_SCENE.instantiate()
+	boss.position = Vector2(screen_center_x(), -80)
+	enemy_container.add_child(boss)
+	boss.defeated.connect(_on_boss_defeated)
+
+
+func _start_stage_transition() -> void:
+	enemy_spawner.stop()
+	stage_label.text = "STAGE %d" % current_stage
+	stage_label.visible = true
+	stage_transition_time_left = STAGE_TRANSITION_DURATION
+
+
+func _enemies_needed_for_stage(stage: int) -> int:
+	return STAGE_BASE_ENEMY_COUNT + (stage - 1) * STAGE_ENEMY_INCREMENT
+
+
 func _show_title() -> void:
 	state = State.TITLE
 	player.set_active(false)
 	enemy_spawner.stop()
+	stage_label.visible = false
 	title_screen.visible = true
 	game_over_screen.visible = false
 	clear_screen.visible = false
@@ -106,6 +163,9 @@ func _show_game_over() -> void:
 	state = State.GAME_OVER
 	player.set_active(false)
 	enemy_spawner.stop()
+	stage_label.visible = false
+	_clear_container(enemy_container)
+	_clear_container(bullet_container)
 	game_over_screen.visible = true
 
 
@@ -113,6 +173,9 @@ func _show_clear() -> void:
 	state = State.CLEAR
 	player.set_active(false)
 	enemy_spawner.stop()
+	stage_label.visible = false
+	_clear_container(enemy_container)
+	_clear_container(bullet_container)
 	clear_screen.visible = true
 
 
