@@ -5,7 +5,7 @@ extends Area2D
 
 signal hit
 
-@export var move_speed: float = 800.0
+@export var move_speed: float = 350.0
 @export var fire_interval: float = 0.3
 @export var bullet_scene: PackedScene = preload("res://scenes/bullet.tscn")
 
