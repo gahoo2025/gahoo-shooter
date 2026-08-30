@@ -27,9 +27,13 @@ gahoo-shooterのゲーム本体。[Godot](https://godotengine.org/) 4系を想�
 自機・敵はGemini（AI画像生成）で作成したスプライト画像（`assets/sprites/`）を使用。弾は引き続き`_draw()`によるシンプルな図形描画（黄色い円）。
 
 - `assets/sprites/player.png`（自機、上向き、緑系）
-- `assets/sprites/enemy.png`（敵機、下向き、赤/グレー系）
+- `assets/sprites/enemy.png`（敵機、下向き、赤/グレー系。生成時は自機と同じ上向きだったため、Sprite2Dのrotationで180度回転させて対応）
 
 **技術メモ**：AI画像生成が出力した元画像はJPEG形式で、透過を示す市松模様がそのまま画素として焼き込まれてしまっていた（JPEGはアルファチャンネルを持たないため）。秘書側で市松模様の背景を検出しアルファ透過に変換する前処理（境界からのフラッドフィルで背景色に一致する連結領域だけを透過化）を行い、機体内部の白い塗装等を誤って透過させずに背景だけを除去したPNG（256×256、RGBA）に変換して`assets/sprites/`に格納した。
+
+## 背景（縦スクロール）
+
+`assets/backgrounds/background.png`（AI画像生成、宇宙・星雲柄、640×640、上下がシームレスに繋がるよう生成）を、同じテクスチャを縦に2枚重ねて下方向に流し続けることで、途切れなくスクロールしているように見せている（`scenes/background.tscn`・`scripts/background.gd`）。`main.tscn`の最初の子ノードとして配置し、自機・敵・弾より背面に描画される。
 
 ## 構成
 
@@ -37,11 +41,13 @@ gahoo-shooterのゲーム本体。[Godot](https://godotengine.org/) 4系を想�
 game/
 ├── project.godot
 ├── scenes/
-│   ├── main.tscn      # ゲーム進行管理（タイトル/プレイ/ゲームオーバー/クリア）
-│   ├── player.tscn     # 自機
-│   ├── bullet.tscn     # 自機の弾
-│   └── enemy.tscn      # 雑魚敵
-├── scripts/            # 上記シーンに対応するGDScript
+│   ├── main.tscn        # ゲーム進行管理（タイトル/プレイ/ゲームオーバー/クリア）
+│   ├── background.tscn  # 縦スクロール背景
+│   ├── player.tscn       # 自機
+│   ├── bullet.tscn       # 自機の弾
+│   └── enemy.tscn        # 雑魚敵
+├── scripts/              # 上記シーンに対応するGDScript
 └── assets/
-    └── sprites/        # 自機・敵のスプライト画像（AI画像生成、背景透過処理済み）
+    ├── sprites/          # 自機・敵のスプライト画像（AI画像生成、背景透過処理済み）
+    └── backgrounds/      # 縦スクロール背景画像（AI画像生成）
 ```
