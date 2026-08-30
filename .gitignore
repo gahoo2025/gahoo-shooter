@@ -1,0 +1,15 @@
+# Node.js / server
+server/node_modules/
+server/.env
+server/npm-debug.log*
+
+# Godot
+game/.godot/
+game/.import/
+game/export.cfg
+game/export_presets.cfg
+*.translation
+
+# OS
+.DS_Store
+Thumbs.db
