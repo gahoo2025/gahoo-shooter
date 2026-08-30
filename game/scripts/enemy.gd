@@ -15,7 +15,6 @@ func _ready() -> void:
 	add_to_group("enemies")
 	screen_size = get_viewport().get_visible_rect().size
 	area_entered.connect(_on_area_entered)
-	queue_redraw()
 
 
 func _process(delta: float) -> void:
@@ -29,7 +28,3 @@ func _on_area_entered(area: Area2D) -> void:
 	area.queue_free()
 	defeated.emit(score_value)
 	queue_free()
-
-
-func _draw() -> void:
-	draw_rect(Rect2(-16, -16, 32, 32), Color(0.9, 0.3, 0.3))

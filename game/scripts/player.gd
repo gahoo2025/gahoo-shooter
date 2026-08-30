@@ -22,7 +22,6 @@ func _ready() -> void:
 	fire_timer.wait_time = fire_interval
 	fire_timer.timeout.connect(_on_fire_timer_timeout)
 	area_entered.connect(_on_area_entered)
-	queue_redraw()
 
 
 func _process(delta: float) -> void:
@@ -76,10 +75,3 @@ func set_active(active: bool) -> void:
 		fire_timer.start()
 	else:
 		fire_timer.stop()
-
-
-func _draw() -> void:
-	draw_polygon(
-		PackedVector2Array([Vector2(0, -18), Vector2(14, 16), Vector2(-14, 16)]),
-		PackedColorArray([Color(0.3, 0.9, 0.4)])
-	)
