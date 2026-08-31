@@ -34,6 +34,7 @@ var stage_transition_time_left: float = 0.0
 @onready var score_label: Label = $UI/ScoreLabel
 @onready var lives_label: Label = $UI/LivesLabel
 @onready var stage_label: Label = $UI/StageLabel
+@onready var dpad: Control = $UI/DPad
 @onready var title_screen: Control = $UI/TitleScreen
 @onready var game_over_screen: Control = $UI/GameOverScreen
 @onready var clear_screen: Control = $UI/ClearScreen
@@ -51,7 +52,18 @@ func _ready() -> void:
 		invincible = false
 		player.set_blinking(false)
 	)
+	_connect_dpad_button("UpButton", "up")
+	_connect_dpad_button("DownButton", "down")
+	_connect_dpad_button("LeftButton", "left")
+	_connect_dpad_button("RightButton", "right")
 	_show_title()
+
+
+## D-padの各ボタンについて、押している間だけ自機に方向を伝えるよう接続する
+func _connect_dpad_button(button_name: String, direction: String) -> void:
+	var button: BaseButton = dpad.get_node(button_name)
+	button.button_down.connect(func() -> void: player.set_dpad(direction, true))
+	button.button_up.connect(func() -> void: player.set_dpad(direction, false))
 
 
 func _process(delta: float) -> void:
@@ -84,6 +96,7 @@ func start_game() -> void:
 	_clear_container(bullet_container)
 	player.position = Vector2(screen_center_x(), get_viewport().get_visible_rect().size.y - 100)
 	player.set_active(true)
+	dpad.visible = true
 	enemy_spawner.configure_for_stage(current_stage)
 	enemy_spawner.start()
 	_update_labels()
@@ -152,6 +165,7 @@ func _enemies_needed_for_stage(stage: int) -> int:
 func _show_title() -> void:
 	state = State.TITLE
 	player.set_active(false)
+	dpad.visible = false
 	enemy_spawner.stop()
 	stage_label.visible = false
 	title_screen.visible = true
@@ -162,6 +176,7 @@ func _show_title() -> void:
 func _show_game_over() -> void:
 	state = State.GAME_OVER
 	player.set_active(false)
+	dpad.visible = false
 	enemy_spawner.stop()
 	stage_label.visible = false
 	_clear_container(enemy_container)
@@ -172,6 +187,7 @@ func _show_game_over() -> void:
 func _show_clear() -> void:
 	state = State.CLEAR
 	player.set_active(false)
+	dpad.visible = false
 	enemy_spawner.stop()
 	stage_label.visible = false
 	_clear_container(enemy_container)

@@ -18,6 +18,8 @@ config/features=PackedStringArray("4.3", "Forward Plus")
 
 window/size/viewport_width=480
 window/size/viewport_height=640
+window/stretch/mode="canvas_items"
+window/stretch/aspect="keep"
 
 [rendering]
 
