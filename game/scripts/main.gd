@@ -1,19 +1,30 @@
 extends Node2D
 
 ## gahoo-shooter ゲーム進行管理
-## タイトル → (ステージ1〜3：雑魚敵の波 → ボス) → 全ステージクリア → タイトル
-## 実装計画（gamedev/gahoo-shooter-plan-01.md・plan-02.md）に対応。
+## タイトル → (ステージ1〜10：雑魚敵の波 → ボス) → 全ステージクリア → タイトル
+## 実装計画（gamedev/gahoo-shooter-plan-01.md・plan-02.md・plan-03.md）に対応。
+## ステージが進むごとに雑魚敵・ボスの難易度が式で上がっていく（下記定数参照）。
 
 enum State { TITLE, PLAYING, GAME_OVER, CLEAR }
 
 const MAX_LIVES := 3
-const TOTAL_STAGES := 3
+const TOTAL_STAGES := 10
 const STAGE_BASE_ENEMY_COUNT := 8
-const STAGE_ENEMY_INCREMENT := 4
+const STAGE_ENEMY_INCREMENT := 2
 const STAGE_TRANSITION_DURATION := 1.5
 const INVINCIBLE_TIME := 1.5
 const SHAKE_DURATION := 0.25
 const SHAKE_STRENGTH := 6.0
+
+const BOSS_BASE_HEALTH := 15
+const BOSS_HEALTH_STEP := 3
+const BOSS_BASE_FIRE_INTERVAL := 1.2
+const BOSS_FIRE_INTERVAL_STEP := 0.07
+const BOSS_MIN_FIRE_INTERVAL := 0.5
+const BOSS_BASE_SPEED := 100.0
+const BOSS_SPEED_STEP := 10.0
+const BOSS_MAX_SPEED := 220.0
+const BOSS_SPREAD_COUNT_FINAL_STAGE := 3
 
 const BOSS_SCENE: PackedScene = preload("res://scenes/boss.tscn")
 
@@ -147,6 +158,10 @@ func _spawn_boss() -> void:
 	enemy_spawner.stop()
 	var boss: Boss = BOSS_SCENE.instantiate()
 	boss.position = Vector2(screen_center_x(), -80)
+	boss.max_health = _boss_health_for_stage(current_stage)
+	boss.fire_interval = _boss_fire_interval_for_stage(current_stage)
+	boss.move_speed = _boss_speed_for_stage(current_stage)
+	boss.bullet_spread_count = BOSS_SPREAD_COUNT_FINAL_STAGE if current_stage >= TOTAL_STAGES else 1
 	enemy_container.add_child(boss)
 	boss.defeated.connect(_on_boss_defeated)
 
@@ -160,6 +175,18 @@ func _start_stage_transition() -> void:
 
 func _enemies_needed_for_stage(stage: int) -> int:
 	return STAGE_BASE_ENEMY_COUNT + (stage - 1) * STAGE_ENEMY_INCREMENT
+
+
+func _boss_health_for_stage(stage: int) -> int:
+	return BOSS_BASE_HEALTH + (stage - 1) * BOSS_HEALTH_STEP
+
+
+func _boss_fire_interval_for_stage(stage: int) -> float:
+	return maxf(BOSS_MIN_FIRE_INTERVAL, BOSS_BASE_FIRE_INTERVAL - (stage - 1) * BOSS_FIRE_INTERVAL_STEP)
+
+
+func _boss_speed_for_stage(stage: int) -> float:
+	return minf(BOSS_MAX_SPEED, BOSS_BASE_SPEED + (stage - 1) * BOSS_SPEED_STEP)
 
 
 func _show_title() -> void:

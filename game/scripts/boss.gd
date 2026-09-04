@@ -3,7 +3,8 @@ extends Area2D
 
 ## ステージ末尾のボス。専用の宇宙船デザイン（紫系）を使用。
 ## 画面上部まで降りてきたら左右に往復移動しつつ、自機を狙う弾を一定間隔で発射する。
-## 自機の弾に15回当たると撃破される。
+## 体力・移動速度・発射間隔・弾数（スプレッド）はMain（main.gd）が
+## ステージ番号に応じて生成時に設定する。自機の弾がmax_health回当たると撃破される。
 
 signal defeated(score_value: int)
 
@@ -17,6 +18,9 @@ const FLASH_TINT: Color = Color(2.0, 2.0, 2.0)
 @export var move_speed: float = 100.0
 @export var fire_interval: float = 1.2
 @export var entry_y: float = 120.0
+## 同時に発射する弾の数（2以上で扇状に広がるスプレッド弾になる。最終ステージ用）
+@export var bullet_spread_count: int = 1
+@export var bullet_spread_angle_deg: float = 20.0
 
 var health: int
 var screen_size: Vector2
@@ -75,10 +79,17 @@ func _fire() -> void:
 	var player: Node = get_tree().get_first_node_in_group("player")
 	if player == null:
 		return
-	var bullet: Area2D = BULLET_SCENE.instantiate()
-	bullet.position = position + Vector2(0, 30)
-	bullet.velocity = (player.global_position - bullet.position).normalized()
-	get_parent().add_child(bullet)
+	var spawn_position: Vector2 = position + Vector2(0, 30)
+	var base_dir: Vector2 = (player.global_position - spawn_position).normalized()
+	var spread_angle: float = deg_to_rad(bullet_spread_angle_deg)
+	for i in range(bullet_spread_count):
+		var offset: float = 0.0
+		if bullet_spread_count > 1:
+			offset = -spread_angle * 0.5 + spread_angle * (float(i) / float(bullet_spread_count - 1))
+		var bullet: Area2D = BULLET_SCENE.instantiate()
+		bullet.position = spawn_position
+		bullet.velocity = base_dir.rotated(offset)
+		get_parent().add_child(bullet)
 
 
 func _spawn_explosion() -> void:
