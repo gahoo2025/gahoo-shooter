@@ -1,7 +1,7 @@
 class_name Boss
 extends Area2D
 
-## ステージ末尾のボス。既存の敵スプライトを拡大・色調変更して流用。
+## ステージ末尾のボス。専用の宇宙船デザイン（紫系）を使用。
 ## 画面上部まで降りてきたら左右に往復移動しつつ、自機を狙う弾を一定間隔で発射する。
 ## 自機の弾に15回当たると撃破される。
 
@@ -9,7 +9,8 @@ signal defeated(score_value: int)
 
 const EXPLOSION_SCENE: PackedScene = preload("res://scenes/explosion.tscn")
 const BULLET_SCENE: PackedScene = preload("res://scenes/boss_bullet.tscn")
-const BASE_TINT: Color = Color(0.75, 0.35, 0.85)
+const BASE_TINT: Color = Color(1.0, 1.0, 1.0)
+const FLASH_TINT: Color = Color(2.0, 2.0, 2.0)
 
 @export var max_health: int = 15
 @export var score_value: int = 2000
@@ -64,7 +65,7 @@ func _on_area_entered(area: Area2D) -> void:
 
 
 func _flash_hit() -> void:
-	sprite.modulate = Color(1.0, 1.0, 1.0)
+	sprite.modulate = FLASH_TINT
 	await get_tree().create_timer(0.08).timeout
 	if is_instance_valid(sprite):
 		sprite.modulate = BASE_TINT
