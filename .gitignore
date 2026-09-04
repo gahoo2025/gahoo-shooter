@@ -10,6 +10,11 @@ game/export.cfg
 game/export_presets.cfg
 *.translation
 
+# 作業用の残骸（ゲームでは未使用。誤コミット防止のため無視）
+game/assets/sprites/back/
+game/assets/backgrounds/background.jpg
+game/assets/backgrounds/background.jpg.import
+
 # OS
 .DS_Store
 Thumbs.db
