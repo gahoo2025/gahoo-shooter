@@ -2,7 +2,7 @@ extends Node2D
 
 ## gahoo-shooter ゲーム進行管理
 ## タイトル → (ステージ1〜10：雑魚敵の波 → ボス) → 全ステージクリア → タイトル
-## 実装計画（gamedev/gahoo-shooter-plan-01.md・plan-02.md・plan-03.md）に対応。
+## 実装計画（gamedev/gahoo-shooter-plan-01.md〜plan-04.md）に対応。
 ## ステージが進むごとに雑魚敵・ボスの難易度が式で上がっていく（下記定数参照）。
 
 enum State { TITLE, PLAYING, GAME_OVER, CLEAR }
@@ -25,6 +25,7 @@ const BOSS_BASE_SPEED := 100.0
 const BOSS_SPEED_STEP := 10.0
 const BOSS_MAX_SPEED := 220.0
 const BOSS_SPREAD_COUNT_FINAL_STAGE := 3
+const SHIELD_DURATION := 5.0
 
 const BOSS_SCENE: PackedScene = preload("res://scenes/boss.tscn")
 
@@ -37,6 +38,7 @@ var invincible: bool = false
 var boss_active: bool = false
 var shake_time_left: float = 0.0
 var stage_transition_time_left: float = 0.0
+var shield_time_left: float = 0.0
 
 @onready var player: Area2D = $Player
 @onready var enemy_spawner: Node = $EnemySpawner
@@ -54,6 +56,7 @@ var stage_transition_time_left: float = 0.0
 
 func _ready() -> void:
 	player.hit.connect(_on_player_hit)
+	player.powerup_collected.connect(_on_powerup_collected)
 	title_screen.get_node("PlayButton").pressed.connect(start_game)
 	game_over_screen.get_node("RestartButton").pressed.connect(start_game)
 	clear_screen.get_node("RestartButton").pressed.connect(start_game)
@@ -92,6 +95,11 @@ func _process(delta: float) -> void:
 			enemy_spawner.configure_for_stage(current_stage)
 			enemy_spawner.start()
 
+	if shield_time_left > 0.0:
+		shield_time_left -= delta
+		if shield_time_left <= 0.0:
+			player.set_blinking(false)
+
 
 func start_game() -> void:
 	score = 0
@@ -101,6 +109,7 @@ func start_game() -> void:
 	invincible = false
 	boss_active = false
 	stage_transition_time_left = 0.0
+	shield_time_left = 0.0
 	stage_label.visible = false
 	state = State.PLAYING
 	_clear_container(enemy_container)
@@ -141,7 +150,7 @@ func _on_boss_defeated(score_value: int) -> void:
 
 
 func _on_player_hit() -> void:
-	if state != State.PLAYING or invincible:
+	if state != State.PLAYING or invincible or shield_time_left > 0.0:
 		return
 	lives -= 1
 	_update_labels()
@@ -151,6 +160,20 @@ func _on_player_hit() -> void:
 	shake_time_left = SHAKE_DURATION
 	if lives <= 0:
 		_show_game_over()
+
+
+## シールド・残機+1（ゲーム進行の状態）を取得したときの処理。
+## 武器強化・スピードアップは自機側（player.gd）で完結するのでここには来ない
+func _on_powerup_collected(power_type: int) -> void:
+	if state != State.PLAYING:
+		return
+	match power_type:
+		PowerUp.Type.SHIELD:
+			shield_time_left = SHIELD_DURATION
+			player.set_blinking(true)
+		PowerUp.Type.LIFE:
+			lives += 1
+			_update_labels()
 
 
 func _spawn_boss() -> void:

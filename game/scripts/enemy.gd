@@ -11,6 +11,8 @@ signal defeated(score_value: int)
 
 const EXPLOSION_SCENE: PackedScene = preload("res://scenes/explosion.tscn")
 const BULLET_SCENE: PackedScene = preload("res://scenes/boss_bullet.tscn")
+const POWER_UP_SCENE: PackedScene = preload("res://scenes/power_up.tscn")
+const POWER_UP_DROP_CHANCE := 0.15
 
 @export var pattern: Pattern = Pattern.STRAIGHT
 @export var speed: float = 160.0
@@ -64,6 +66,8 @@ func _on_area_entered(area: Area2D) -> void:
 	# collision_mask により、ここに来るのは自機の弾のみを想定
 	area.queue_free()
 	_spawn_explosion()
+	if randf() < POWER_UP_DROP_CHANCE:
+		_spawn_power_up()
 	defeated.emit(score_value)
 	queue_free()
 
@@ -72,6 +76,13 @@ func _spawn_explosion() -> void:
 	var explosion: Node2D = EXPLOSION_SCENE.instantiate()
 	explosion.position = position
 	get_parent().add_child(explosion)
+
+
+func _spawn_power_up() -> void:
+	var power_up: PowerUp = POWER_UP_SCENE.instantiate()
+	power_up.position = position
+	power_up.power_type = PowerUp.Type.values()[randi() % PowerUp.Type.size()]
+	get_parent().add_child(power_up)
 
 
 func _fire() -> void:

@@ -4,10 +4,15 @@ extends Area2D
 ## 操作方法：画面上の方向ボタン（モバイル向け主要操作）、タップ/ドラッグ、矢印キー/WASD（デバッグ用）
 
 signal hit
+## シールド・残機+1（ゲーム進行の状態に関わる）はmain.gd側で処理するため、
+## 取得をシグナルで通知する。武器強化・スピードアップは自機側で完結する
+signal powerup_collected(power_type: int)
 
 @export var move_speed: float = 350.0
 @export var fire_interval: float = 0.3
 @export var bullet_scene: PackedScene = preload("res://scenes/bullet.tscn")
+@export var weapon_spread_angle_deg: float = 18.0
+@export var speed_boost_multiplier: float = 1.5
 
 const BLINK_INTERVAL := 0.1
 
@@ -16,6 +21,8 @@ var target_position: Vector2
 var is_dragging: bool = false
 var blinking: bool = false
 var _blink_elapsed: float = 0.0
+var weapon_powered: bool = false
+var _base_move_speed: float
 
 # 画面上の方向ボタン（D-pad）の押下状態。main.gdのDPadボタンから設定される
 var dpad_up: bool = false
@@ -24,6 +31,8 @@ var dpad_left: bool = false
 var dpad_right: bool = false
 
 @onready var fire_timer: Timer = $AutoFireTimer
+@onready var weapon_timer: Timer = $WeaponTimer
+@onready var speed_timer: Timer = $SpeedTimer
 @onready var sprite: Sprite2D = $Sprite2D
 
 
@@ -31,8 +40,11 @@ func _ready() -> void:
 	add_to_group("player")
 	screen_size = get_viewport().get_visible_rect().size
 	target_position = position
+	_base_move_speed = move_speed
 	fire_timer.wait_time = fire_interval
 	fire_timer.timeout.connect(_on_fire_timer_timeout)
+	weapon_timer.timeout.connect(func() -> void: weapon_powered = false)
+	speed_timer.timeout.connect(func() -> void: move_speed = _base_move_speed)
 	area_entered.connect(_on_area_entered)
 
 
@@ -79,9 +91,20 @@ func _unhandled_input(event: InputEvent) -> void:
 func _on_fire_timer_timeout() -> void:
 	if bullet_scene == null:
 		return
-	var bullet: Area2D = bullet_scene.instantiate()
-	bullet.position = position + Vector2(0, -20)
-	get_parent().get_node("BulletContainer").add_child(bullet)
+	var spawn_position: Vector2 = position + Vector2(0, -20)
+	var bullet_container: Node = get_parent().get_node("BulletContainer")
+	if weapon_powered:
+		# 武器強化中は3方向（3WAY）に発射する
+		var spread: float = deg_to_rad(weapon_spread_angle_deg)
+		for offset in [-spread, 0.0, spread]:
+			var bullet: Area2D = bullet_scene.instantiate()
+			bullet.position = spawn_position
+			bullet.velocity = Vector2.UP.rotated(offset)
+			bullet_container.add_child(bullet)
+	else:
+		var bullet: Area2D = bullet_scene.instantiate()
+		bullet.position = spawn_position
+		bullet_container.add_child(bullet)
 
 
 func _on_area_entered(area: Area2D) -> void:
@@ -90,6 +113,24 @@ func _on_area_entered(area: Area2D) -> void:
 	elif area.is_in_group("enemy_bullets"):
 		area.queue_free()
 		hit.emit()
+	elif area.is_in_group("powerups"):
+		var power_type: int = (area as PowerUp).power_type
+		area.queue_free()
+		_collect_powerup(power_type)
+
+
+## 武器強化・スピードアップは自機側で完結させ、シールド・残機+1は
+## ゲーム進行の状態に関わるためmain.gdへシグナルで通知する
+func _collect_powerup(power_type: int) -> void:
+	match power_type:
+		PowerUp.Type.WEAPON:
+			weapon_powered = true
+			weapon_timer.start()
+		PowerUp.Type.SPEED:
+			move_speed = _base_move_speed * speed_boost_multiplier
+			speed_timer.start()
+		_:
+			powerup_collected.emit(power_type)
 
 
 ## ゲームの状態（タイトル/プレイ中/ゲームオーバー/クリア）に応じて
@@ -104,6 +145,10 @@ func set_active(active: bool) -> void:
 	dpad_down = false
 	dpad_left = false
 	dpad_right = false
+	weapon_powered = false
+	weapon_timer.stop()
+	move_speed = _base_move_speed
+	speed_timer.stop()
 	set_blinking(false)
 	if active:
 		fire_timer.start()

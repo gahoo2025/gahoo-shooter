@@ -34,7 +34,18 @@ gahoo-shooterのゲーム本体。[Godot](https://godotengine.org/) 4系を想�
 - **雑魚敵の射撃**（新要素、ステージ7以降）：`enemy.gd`に`can_shoot`・`shoot_interval`を追加。ボスと同じ弾シーン（`boss_bullet.tscn`）を直進で発射
 - **最終ステージ（10）のボスは3方向スプレッド弾**：`boss.gd`の`bullet_spread_count`・`bullet_spread_angle_deg`で対応
 
-**次フェーズのスコープ外**（未実装）：パワーアップ、広告SDK統合、バックエンド（スコア保存）連携。
+### 実装計画 第4弾：パワーアップアイテム（`gamedev/gahoo-shooter-plan-04.md`）
+
+画像を使わず`_draw()`の図形描画で表現。雑魚敵撃破時に15%の確率、ボス撃破時は必ず1つドロップ（`scenes/power_up.tscn`・`scripts/power_up.gd`）。
+
+- **武器強化**（黄色い星）：自機の弾が1発→3方向（3WAY）に。30秒間
+- **シールド**（水色の円）：5秒間、被弾を無効化する（既存の被弾後無敵とは別枠、`main.gd`の`shield_time_left`）
+- **スピードアップ**（緑の三角）：移動速度が1.5倍。15秒間
+- **残機+1**（ピンクの十字）：即座に残機+1
+
+武器強化・スピードアップは自機自身（`player.gd`）が管理し、シールド・残機+1はゲーム進行の状態に関わるため`powerup_collected`シグナルで`main.gd`に通知する。自機の弾（`bullet.gd`）はこれまで直進専用だったが、`velocity`ベースの移動に変更し3WAY発射に対応した。
+
+**次フェーズのスコープ外**（未実装）：広告SDK統合、バックエンド（スコア保存）連携。
 
 ### 実機フィードバックを受けた調整（2026-08-30）
 
@@ -81,7 +92,8 @@ game/
 │   ├── bullet.tscn       # 自機の弾
 │   ├── enemy.tscn        # 雑魚敵（直進/ジグザグ/トラッカー）
 │   ├── boss.tscn         # ボス
-│   ├── boss_bullet.tscn  # ボスの弾
+│   ├── boss_bullet.tscn  # ボスの弾（雑魚敵の弾にも流用）
+│   ├── power_up.tscn     # パワーアップアイテム（画像不使用）
 │   └── explosion.tscn    # 爆発エフェクト（画像不使用）
 ├── scripts/               # 上記シーンに対応するGDScript
 └── assets/
