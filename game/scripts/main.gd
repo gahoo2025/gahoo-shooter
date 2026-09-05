@@ -27,8 +27,13 @@ const BOSS_MIN_FIRE_INTERVAL := 0.5
 const BOSS_BASE_SPEED := 100.0
 const BOSS_SPEED_STEP := 6.5
 const BOSS_MAX_SPEED := 220.0
-const BOSS_SPREAD_COUNT_FINAL_STAGE := 3
 const SHIELD_DURATION := 5.0
+
+## ボスのタイプ（見た目・攻撃パターン）は5ステージごとに切り替わる（boss.gdのBossType参照）。
+## OVERLORD（16〜20ステージ）は自機狙いのスプレッド弾がベースで、最終ステージだけさらに弾数を増やす
+const BOSS_STAGES_PER_TYPE := 5
+const BOSS_OVERLORD_SPREAD_COUNT := 3
+const BOSS_SPREAD_COUNT_FINAL_STAGE := 5
 
 ## 連続撃破ボーナス：COMBO_WINDOW秒以内に次の雑魚敵を倒し続けるとコンボが継続し、
 ## コンボ数に応じたボーナススコアが加算される（被弾・撃破が途切れるとリセット）
@@ -241,13 +246,35 @@ func _spawn_boss() -> void:
 	boss_active = true
 	enemy_spawner.stop()
 	var boss: Boss = BOSS_SCENE.instantiate()
+	var boss_type: Boss.BossType = _boss_type_for_stage(current_stage)
 	boss.position = Vector2(screen_center_x(), -80)
+	boss.boss_type = boss_type
 	boss.max_health = _boss_health_for_stage(current_stage)
 	boss.fire_interval = _boss_fire_interval_for_stage(current_stage)
 	boss.move_speed = _boss_speed_for_stage(current_stage)
-	boss.bullet_spread_count = BOSS_SPREAD_COUNT_FINAL_STAGE if current_stage >= TOTAL_STAGES else 1
+	boss.bullet_spread_count = _boss_spread_count_for(boss_type, current_stage)
 	enemy_container.add_child(boss)
 	boss.defeated.connect(_on_boss_defeated)
+
+
+## ステージ番号からボスのタイプを決める（BOSS_STAGES_PER_TYPEごとに切り替わる）
+func _boss_type_for_stage(stage: int) -> Boss.BossType:
+	if stage <= BOSS_STAGES_PER_TYPE:
+		return Boss.BossType.GUARDIAN
+	elif stage <= BOSS_STAGES_PER_TYPE * 2:
+		return Boss.BossType.TWIN_CANNON
+	elif stage <= BOSS_STAGES_PER_TYPE * 3:
+		return Boss.BossType.SWEEPER
+	else:
+		return Boss.BossType.OVERLORD
+
+
+## 自機狙いスプレッド弾を使うタイプ（GUARDIAN・OVERLORD）だけ弾数が意味を持つ。
+## OVERLORDは最終ステージのみさらに弾数を増やして締めくくりの見せ場にする
+func _boss_spread_count_for(boss_type: Boss.BossType, stage: int) -> int:
+	if boss_type == Boss.BossType.OVERLORD:
+		return BOSS_SPREAD_COUNT_FINAL_STAGE if stage >= TOTAL_STAGES else BOSS_OVERLORD_SPREAD_COUNT
+	return 1
 
 
 func _start_stage_transition() -> void:
