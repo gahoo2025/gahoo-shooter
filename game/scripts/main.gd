@@ -28,6 +28,7 @@ const BOSS_SPREAD_COUNT_FINAL_STAGE := 3
 const SHIELD_DURATION := 5.0
 
 const BOSS_SCENE: PackedScene = preload("res://scenes/boss.tscn")
+const HIGH_SCORE_FILE := "user://highscore.cfg"
 
 var state: State = State.TITLE
 var score: int = 0
@@ -39,6 +40,7 @@ var boss_active: bool = false
 var shake_time_left: float = 0.0
 var stage_transition_time_left: float = 0.0
 var shield_time_left: float = 0.0
+var high_score: int = 0
 
 @onready var player: Area2D = $Player
 @onready var enemy_spawner: Node = $EnemySpawner
@@ -46,15 +48,22 @@ var shield_time_left: float = 0.0
 @onready var bullet_container: Node2D = $BulletContainer
 @onready var score_label: Label = $UI/ScoreLabel
 @onready var lives_label: Label = $UI/LivesLabel
+@onready var high_score_label: Label = $UI/HighScoreLabel
 @onready var stage_label: Label = $UI/StageLabel
 @onready var dpad: Control = $UI/DPad
 @onready var title_screen: Control = $UI/TitleScreen
+@onready var title_high_score_label: Label = $UI/TitleScreen/HighScoreLabel
 @onready var game_over_screen: Control = $UI/GameOverScreen
+@onready var game_over_record_label: Label = $UI/GameOverScreen/NewRecordLabel
 @onready var clear_screen: Control = $UI/ClearScreen
+@onready var clear_record_label: Label = $UI/ClearScreen/NewRecordLabel
 @onready var invincible_timer: Timer = $InvincibleTimer
 
 
 func _ready() -> void:
+	high_score = _load_high_score()
+	high_score_label.text = "HIGH SCORE: %d" % high_score
+	title_high_score_label.text = "HIGH SCORE: %d" % high_score
 	player.hit.connect(_on_player_hit)
 	player.powerup_collected.connect(_on_powerup_collected)
 	title_screen.get_node("PlayButton").pressed.connect(start_game)
@@ -218,9 +227,35 @@ func _show_title() -> void:
 	dpad.visible = false
 	enemy_spawner.stop()
 	stage_label.visible = false
+	title_high_score_label.text = "HIGH SCORE: %d" % high_score
 	title_screen.visible = true
 	game_over_screen.visible = false
 	clear_screen.visible = false
+
+
+## scoreがhigh_scoreを上回っていれば更新・保存する。更新した場合はtrueを返す（NEW RECORD表示用）
+func _try_update_high_score() -> bool:
+	if score <= high_score:
+		return false
+	high_score = score
+	high_score_label.text = "HIGH SCORE: %d" % high_score
+	_save_high_score(high_score)
+	return true
+
+
+## ハイスコアを保存する。user://はHTML5書き出しでもIndexedDBに永続化される
+func _load_high_score() -> int:
+	var config := ConfigFile.new()
+	var err: int = config.load(HIGH_SCORE_FILE)
+	if err != OK:
+		return 0
+	return int(config.get_value("scores", "high_score", 0))
+
+
+func _save_high_score(value: int) -> void:
+	var config := ConfigFile.new()
+	config.set_value("scores", "high_score", value)
+	config.save(HIGH_SCORE_FILE)
 
 
 func _show_game_over() -> void:
@@ -231,6 +266,7 @@ func _show_game_over() -> void:
 	stage_label.visible = false
 	_clear_container(enemy_container)
 	_clear_container(bullet_container)
+	game_over_record_label.visible = _try_update_high_score()
 	game_over_screen.visible = true
 
 
@@ -242,6 +278,7 @@ func _show_clear() -> void:
 	stage_label.visible = false
 	_clear_container(enemy_container)
 	_clear_container(bullet_container)
+	clear_record_label.visible = _try_update_high_score()
 	clear_screen.visible = true
 
 

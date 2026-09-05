@@ -42,6 +42,13 @@ offset_right = 200.0
 offset_bottom = 64.0
 text = "LIVES: 3"
 
+[node name="HighScoreLabel" type="Label" parent="UI"]
+offset_left = 10.0
+offset_top = 70.0
+offset_right = 200.0
+offset_bottom = 94.0
+text = "HIGH SCORE: 0"
+
 [node name="StageLabel" type="Label" parent="UI"]
 visible = false
 anchor_left = 0.5
@@ -138,6 +145,21 @@ theme_override_font_sizes/font_size = 32
 horizontal_alignment = 1
 text = "GAHOO SHOOTER"
 
+[node name="HighScoreLabel" type="Label" parent="UI/TitleScreen"]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -150.0
+offset_top = -80.0
+offset_right = 150.0
+offset_bottom = -50.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_font_sizes/font_size = 18
+horizontal_alignment = 1
+text = "HIGH SCORE: 0"
+
 [node name="PlayButton" type="Button" parent="UI/TitleScreen"]
 anchor_left = 0.5
 anchor_top = 0.5
@@ -171,6 +193,22 @@ theme_override_font_sizes/font_size = 32
 horizontal_alignment = 1
 text = "GAME OVER"
 
+[node name="NewRecordLabel" type="Label" parent="UI/GameOverScreen"]
+visible = false
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -150.0
+offset_top = -80.0
+offset_right = 150.0
+offset_bottom = -50.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_font_sizes/font_size = 18
+horizontal_alignment = 1
+text = "NEW RECORD!"
+
 [node name="RestartButton" type="Button" parent="UI/GameOverScreen"]
 anchor_left = 0.5
 anchor_top = 0.5
@@ -203,6 +241,22 @@ grow_vertical = 2
 theme_override_font_sizes/font_size = 32
 horizontal_alignment = 1
 text = "ALL CLEAR!"
+
+[node name="NewRecordLabel" type="Label" parent="UI/ClearScreen"]
+visible = false
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -150.0
+offset_top = -80.0
+offset_right = 150.0
+offset_bottom = -50.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_font_sizes/font_size = 18
+horizontal_alignment = 1
+text = "NEW RECORD!"
 
 [node name="RestartButton" type="Button" parent="UI/ClearScreen"]
 anchor_left = 0.5
