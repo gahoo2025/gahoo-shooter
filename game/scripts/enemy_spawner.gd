@@ -1,34 +1,37 @@
 extends Node
 
 ## 一定間隔で画面上部のランダムなX座標に敵を出現させる。
-## ステージ番号（1〜10）から難易度を式で算出する（configure_for_stage）：
+## ステージ番号（1〜20）から難易度を式で算出する（configure_for_stage）：
 ## 出現間隔・敵の移動速度・使用パターンの構成・射撃可否がステージが
 ## 進むごとに上がっていく。start()/stop() はMain（ゲーム進行管理）から呼ばれる。
-## ステージ3以降は、通常の単機出現とは別枠でFormationTimerが一定間隔ごとに
+## ステージ6以降は、通常の単機出現とは別枠でFormationTimerが一定間隔ごとに
 ## 「編隊（複数機が隊列を組んで登場）」を追加で発生させる。
+## 各STEP系定数・ステージ境界は、当初10ステージ向けに調整していたものを、
+## 20ステージに拡張した際（2026-09-05）に難易度カーブが最終ステージ付近まで
+## 滑らかに伸びるよう合わせて調整した（main.gdの対応する定数も同様）。
 
 enum FormationType { LINE, V_SHAPE }
 
 const MIN_SPAWN_INTERVAL := 0.5
 const BASE_SPAWN_INTERVAL := 1.2
-const SPAWN_INTERVAL_STEP := 0.08
+const SPAWN_INTERVAL_STEP := 0.04
 
 const BASE_ENEMY_SPEED := 160.0
-const ENEMY_SPEED_STEP := 13.0
+const ENEMY_SPEED_STEP := 6.5
 const MAX_ENEMY_SPEED := 280.0
 
-const ENEMY_SHOOTING_START_STAGE := 7
+const ENEMY_SHOOTING_START_STAGE := 14
 const ENEMY_SHOOT_INTERVAL := 1.8
 
-## 編隊（隊列出現）関連。ステージ3以降で登場し、ステージが進むほど
+## 編隊（隊列出現）関連。ステージ6以降で登場し、ステージが進むほど
 ## 出現間隔が短く・隊列の機数が多くなる
-const FORMATION_START_STAGE := 3
+const FORMATION_START_STAGE := 6
 const BASE_FORMATION_INTERVAL := 8.0
-const FORMATION_INTERVAL_STEP := 0.3
+const FORMATION_INTERVAL_STEP := 0.15
 const MIN_FORMATION_INTERVAL := 4.5
 const FORMATION_BASE_SIZE := 3
 const FORMATION_MAX_SIZE := 5
-const FORMATION_STAGES_PER_EXTRA := 3
+const FORMATION_STAGES_PER_EXTRA := 6
 const FORMATION_SPACING := 56.0
 const FORMATION_V_DEPTH := 46.0
 
@@ -76,9 +79,9 @@ func configure_for_stage(stage: int) -> void:
 func _patterns_for_stage(stage: int) -> Array[Enemy.Pattern]:
 	if stage <= 1:
 		return [Enemy.Pattern.STRAIGHT]
-	elif stage <= 3:
+	elif stage <= 5:
 		return [Enemy.Pattern.STRAIGHT, Enemy.Pattern.ZIGZAG]
-	elif stage <= 6:
+	elif stage <= 11:
 		return [Enemy.Pattern.STRAIGHT, Enemy.Pattern.ZIGZAG, Enemy.Pattern.TRACKER]
 	else:
 		# 終盤は直進を外し、避けにくいパターンの比率を上げる

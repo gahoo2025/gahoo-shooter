@@ -1,14 +1,17 @@
 extends Node2D
 
 ## gahoo-shooter ゲーム進行管理
-## タイトル → (ステージ1〜10：雑魚敵の波 → ボス) → 全ステージクリア → タイトル
+## タイトル → (ステージ1〜20：雑魚敵の波 → ボス) → 全ステージクリア → タイトル
 ## 実装計画（gamedev/gahoo-shooter-plan-01.md〜plan-04.md）に対応。
 ## ステージが進むごとに雑魚敵・ボスの難易度が式で上がっていく（下記定数参照）。
+## 各STEP系定数は、当初10ステージ向けに調整していたものを、
+## 20ステージに拡張した際（2026-09-05）に難易度カーブが最終ステージ付近まで
+## 滑らかに伸びるよう合わせて調整した（enemy_spawner.gdの対応する定数も同様）。
 
 enum State { TITLE, PLAYING, GAME_OVER, CLEAR }
 
 const MAX_LIVES := 3
-const TOTAL_STAGES := 10
+const TOTAL_STAGES := 20
 const STAGE_BASE_ENEMY_COUNT := 8
 const STAGE_ENEMY_INCREMENT := 2
 const STAGE_TRANSITION_DURATION := 1.5
@@ -19,10 +22,10 @@ const SHAKE_STRENGTH := 6.0
 const BOSS_BASE_HEALTH := 15
 const BOSS_HEALTH_STEP := 3
 const BOSS_BASE_FIRE_INTERVAL := 1.2
-const BOSS_FIRE_INTERVAL_STEP := 0.07
+const BOSS_FIRE_INTERVAL_STEP := 0.035
 const BOSS_MIN_FIRE_INTERVAL := 0.5
 const BOSS_BASE_SPEED := 100.0
-const BOSS_SPEED_STEP := 10.0
+const BOSS_SPEED_STEP := 6.5
 const BOSS_MAX_SPEED := 220.0
 const BOSS_SPREAD_COUNT_FINAL_STAGE := 3
 const SHIELD_DURATION := 5.0
