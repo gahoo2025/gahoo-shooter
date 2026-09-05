@@ -2,14 +2,13 @@ class_name Boss
 extends Area2D
 
 ## ステージ末尾のボス。5ステージごとに4種類のタイプが切り替わり、
-## 見た目（現時点では色味）・攻撃パターンが変わる（BossType参照）。
+## 見た目・攻撃パターンが変わる（BossType参照）。
 ## 画面上部まで降りてきたら左右に往復移動しつつ、タイプごとの弾幕を一定間隔で発射する。
 ## 体力・移動速度・発射間隔・タイプはMain（main.gd）がステージ番号に応じて
 ## 生成時に設定する。自機の弾がmax_health回当たると撃破される。
 ##
-## 見た目について（2026-09-05）：4タイプとも当面は同じ機体画像（boss.png）を
-## 色味（modulate）だけ変えて区別している。タイプごとの専用画像が揃い次第、
-## TYPE_TEXTURESに差し替える予定（player.png・enemy.png・power_up系と同じ流れ）。
+## 見た目（2026-09-05）：タイプごとにGemini（AI画像生成）で作成した専用の
+## 機体画像を使用（assets/sprites/boss_*.png、768x768）。
 enum BossType { GUARDIAN, TWIN_CANNON, SWEEPER, OVERLORD }
 
 signal defeated(score_value: int, position: Vector2)
@@ -19,12 +18,12 @@ const BULLET_SCENE: PackedScene = preload("res://scenes/boss_bullet.tscn")
 const POWER_UP_SCENE: PackedScene = preload("res://scenes/power_up.tscn")
 const FLASH_BRIGHTNESS := 2.0
 
-## タイプごとの色味（暫定。専用画像に差し替えるまでのプレースホルダー）
-const TYPE_TINTS: Dictionary = {
-	BossType.GUARDIAN: Color(1.0, 1.0, 1.0),
-	BossType.TWIN_CANNON: Color(0.55, 0.75, 1.0),
-	BossType.SWEEPER: Color(1.0, 0.6, 0.3),
-	BossType.OVERLORD: Color(1.0, 0.4, 0.75),
+## タイプごとの機体画像
+const TYPE_TEXTURES: Dictionary = {
+	BossType.GUARDIAN: preload("res://assets/sprites/boss_guardian.png"),
+	BossType.TWIN_CANNON: preload("res://assets/sprites/boss_twin_cannon.png"),
+	BossType.SWEEPER: preload("res://assets/sprites/boss_sweeper.png"),
+	BossType.OVERLORD: preload("res://assets/sprites/boss_overlord.png"),
 }
 
 ## 全方位弾幕（SWEEPER）の同時発射数・1回ごとの回転角
@@ -43,11 +42,12 @@ const TWIN_CANNON_OFFSET_X := 28.0
 @export var bullet_spread_count: int = 1
 @export var bullet_spread_angle_deg: float = 20.0
 
+const BASE_TINT: Color = Color(1.0, 1.0, 1.0)
+
 var health: int
 var screen_size: Vector2
 var direction: int = 1
 var entered: bool = false
-var base_tint: Color = Color(1.0, 1.0, 1.0)
 var sweeper_rotation_deg: float = 0.0
 
 @onready var fire_timer: Timer = $FireTimer
@@ -58,8 +58,8 @@ func _ready() -> void:
 	add_to_group("enemies")
 	health = max_health
 	screen_size = get_viewport().get_visible_rect().size
-	base_tint = TYPE_TINTS.get(boss_type, Color(1.0, 1.0, 1.0))
-	sprite.modulate = base_tint
+	sprite.texture = TYPE_TEXTURES.get(boss_type, TYPE_TEXTURES[BossType.GUARDIAN])
+	sprite.modulate = BASE_TINT
 	area_entered.connect(_on_area_entered)
 	fire_timer.wait_time = fire_interval
 	fire_timer.timeout.connect(_fire)
@@ -95,10 +95,10 @@ func _on_area_entered(area: Area2D) -> void:
 
 
 func _flash_hit() -> void:
-	sprite.modulate = base_tint * FLASH_BRIGHTNESS
+	sprite.modulate = BASE_TINT * FLASH_BRIGHTNESS
 	await get_tree().create_timer(0.08).timeout
 	if is_instance_valid(sprite):
-		sprite.modulate = base_tint
+		sprite.modulate = BASE_TINT
 
 
 ## タイプごとに異なる弾幕パターンで発射する
