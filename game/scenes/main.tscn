@@ -23,6 +23,9 @@ script = ExtResource("3")
 [node name="Timer" type="Timer" parent="EnemySpawner"]
 wait_time = 1.2
 
+[node name="FormationTimer" type="Timer" parent="EnemySpawner"]
+wait_time = 8.0
+
 [node name="InvincibleTimer" type="Timer" parent="."]
 one_shot = true
 
