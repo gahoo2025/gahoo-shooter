@@ -49,6 +49,8 @@ var shield_time_left: float = 0.0
 var high_score: int = 0
 var combo_count: int = 0
 var combo_time_left: float = 0.0
+## 上下ボタンは左右両方の列にあるため、方向ごとの押下数を数えて管理する
+var dpad_press_counts: Dictionary = {"up": 0, "down": 0, "left": 0, "right": 0}
 
 @onready var player: Area2D = $Player
 @onready var enemy_spawner: Node = $EnemySpawner
@@ -84,18 +86,40 @@ func _ready() -> void:
 		invincible = false
 		player.set_blinking(false)
 	)
-	_connect_dpad_button("UpButton", "up")
-	_connect_dpad_button("DownButton", "down")
+	# 上下は左右それぞれの列にボタンがあるため、片方を離してももう片方が
+	# 押されていれば移動を継続できるよう、方向ごとに押下数を数えて判定する
+	_connect_dpad_button("UpButtonLeft", "up")
+	_connect_dpad_button("UpButtonRight", "up")
+	_connect_dpad_button("DownButtonLeft", "down")
+	_connect_dpad_button("DownButtonRight", "down")
 	_connect_dpad_button("LeftButton", "left")
 	_connect_dpad_button("RightButton", "right")
 	_show_title()
 
 
-## D-padの各ボタンについて、押している間だけ自機に方向を伝えるよう接続する
+## D-padの各ボタンについて、押している間だけ自機に方向を伝えるよう接続する。
+## 同じ方向に複数のボタン（上下は左右両方の列にある）が対応する場合があるため、
+## 押下数をカウントし、1つでも押されていればその方向をONにする
 func _connect_dpad_button(button_name: String, direction: String) -> void:
 	var button: BaseButton = dpad.get_node(button_name)
-	button.button_down.connect(func() -> void: player.set_dpad(direction, true))
-	button.button_up.connect(func() -> void: player.set_dpad(direction, false))
+	button.button_down.connect(func() -> void: _on_dpad_button_pressed(direction, true))
+	button.button_up.connect(func() -> void: _on_dpad_button_pressed(direction, false))
+
+
+func _on_dpad_button_pressed(direction: String, pressed: bool) -> void:
+	if pressed:
+		dpad_press_counts[direction] = dpad_press_counts.get(direction, 0) + 1
+	else:
+		dpad_press_counts[direction] = maxi(0, dpad_press_counts.get(direction, 0) - 1)
+	player.set_dpad(direction, dpad_press_counts[direction] > 0)
+
+
+## 画面切り替えでD-padが非表示になる際、押しっぱなしのまま切り替わって
+## 状態が残ってしまわないよう、押下数と自機側の方向をリセットする
+func _reset_dpad() -> void:
+	for direction in dpad_press_counts.keys():
+		dpad_press_counts[direction] = 0
+		player.set_dpad(direction, false)
 
 
 func _process(delta: float) -> void:
@@ -140,6 +164,7 @@ func start_game() -> void:
 	_clear_container(bullet_container)
 	player.position = Vector2(screen_center_x(), get_viewport().get_visible_rect().size.y - 100)
 	player.set_active(true)
+	_reset_dpad()
 	dpad.visible = true
 	enemy_spawner.configure_for_stage(current_stage)
 	enemy_spawner.start()
@@ -248,6 +273,7 @@ func _boss_speed_for_stage(stage: int) -> float:
 func _show_title() -> void:
 	state = State.TITLE
 	player.set_active(false)
+	_reset_dpad()
 	dpad.visible = false
 	enemy_spawner.stop()
 	stage_label.visible = false
@@ -312,6 +338,7 @@ func _show_score_popup(popup_position: Vector2, amount: int, is_bonus: bool) -> 
 func _show_game_over() -> void:
 	state = State.GAME_OVER
 	player.set_active(false)
+	_reset_dpad()
 	dpad.visible = false
 	enemy_spawner.stop()
 	stage_label.visible = false
@@ -324,6 +351,7 @@ func _show_game_over() -> void:
 func _show_clear() -> void:
 	state = State.CLEAR
 	player.set_active(false)
+	_reset_dpad()
 	dpad.visible = false
 	enemy_spawner.stop()
 	stage_label.visible = false
