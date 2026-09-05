@@ -27,7 +27,13 @@ const BOSS_MAX_SPEED := 220.0
 const BOSS_SPREAD_COUNT_FINAL_STAGE := 3
 const SHIELD_DURATION := 5.0
 
+## 連続撃破ボーナス：COMBO_WINDOW秒以内に次の雑魚敵を倒し続けるとコンボが継続し、
+## コンボ数に応じたボーナススコアが加算される（被弾・撃破が途切れるとリセット）
+const COMBO_WINDOW := 1.5
+const COMBO_BONUS_STEP := 20
+
 const BOSS_SCENE: PackedScene = preload("res://scenes/boss.tscn")
+const SCORE_POPUP_SCENE: PackedScene = preload("res://scenes/score_popup.tscn")
 const HIGH_SCORE_FILE := "user://highscore.cfg"
 
 var state: State = State.TITLE
@@ -41,6 +47,8 @@ var shake_time_left: float = 0.0
 var stage_transition_time_left: float = 0.0
 var shield_time_left: float = 0.0
 var high_score: int = 0
+var combo_count: int = 0
+var combo_time_left: float = 0.0
 
 @onready var player: Area2D = $Player
 @onready var enemy_spawner: Node = $EnemySpawner
@@ -49,6 +57,7 @@ var high_score: int = 0
 @onready var score_label: Label = $UI/ScoreLabel
 @onready var lives_label: Label = $UI/LivesLabel
 @onready var high_score_label: Label = $UI/HighScoreLabel
+@onready var combo_label: Label = $UI/ComboLabel
 @onready var stage_label: Label = $UI/StageLabel
 @onready var dpad: Control = $UI/DPad
 @onready var title_screen: Control = $UI/TitleScreen
@@ -109,6 +118,11 @@ func _process(delta: float) -> void:
 		if shield_time_left <= 0.0:
 			player.set_blinking(false)
 
+	if combo_time_left > 0.0:
+		combo_time_left -= delta
+		if combo_time_left <= 0.0:
+			_reset_combo()
+
 
 func start_game() -> void:
 	score = 0
@@ -120,6 +134,7 @@ func start_game() -> void:
 	stage_transition_time_left = 0.0
 	shield_time_left = 0.0
 	stage_label.visible = false
+	_reset_combo()
 	state = State.PLAYING
 	_clear_container(enemy_container)
 	_clear_container(bullet_container)
@@ -134,22 +149,30 @@ func start_game() -> void:
 	clear_screen.visible = false
 
 
-func _on_enemy_defeated(score_value: int) -> void:
+func _on_enemy_defeated(score_value: int, enemy_position: Vector2) -> void:
 	if state != State.PLAYING or boss_active:
 		return
-	score += score_value
+	combo_count += 1
+	combo_time_left = COMBO_WINDOW
+	var bonus: int = (combo_count - 1) * COMBO_BONUS_STEP
+	score += score_value + bonus
 	defeated_count += 1
 	_update_labels()
+	_update_combo_label()
+	_show_score_popup(enemy_position, score_value + bonus, bonus > 0)
 	if defeated_count >= _enemies_needed_for_stage(current_stage):
 		_spawn_boss()
 
 
-func _on_boss_defeated(score_value: int) -> void:
+func _on_boss_defeated(score_value: int, boss_position: Vector2) -> void:
 	if state != State.PLAYING:
 		return
 	score += score_value
 	boss_active = false
 	_update_labels()
+	_show_score_popup(boss_position, score_value, false)
+	# ボス戦は連続撃破のリズムとは別枠なので、コンボはここで一区切りにする
+	_reset_combo()
 	if current_stage >= TOTAL_STAGES:
 		_show_clear()
 	else:
@@ -163,6 +186,7 @@ func _on_player_hit() -> void:
 		return
 	lives -= 1
 	_update_labels()
+	_reset_combo()
 	invincible = true
 	invincible_timer.start()
 	player.set_blinking(true)
@@ -256,6 +280,33 @@ func _save_high_score(value: int) -> void:
 	var config := ConfigFile.new()
 	config.set_value("scores", "high_score", value)
 	config.save(HIGH_SCORE_FILE)
+
+
+func _reset_combo() -> void:
+	combo_count = 0
+	combo_time_left = 0.0
+	combo_label.visible = false
+
+
+## コンボ数の表示を更新し、増えた瞬間だけ軽く拡大させて気づきやすくする
+func _update_combo_label() -> void:
+	if combo_count < 2:
+		combo_label.visible = false
+		return
+	combo_label.text = "COMBO x%d" % combo_count
+	combo_label.visible = true
+	combo_label.scale = Vector2(1.3, 1.3)
+	var tween: Tween = create_tween()
+	tween.tween_property(combo_label, "scale", Vector2.ONE, 0.15).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+
+## 撃破位置に「+スコア」を表示する（コンボボーナスが乗っている場合は色を変える）
+func _show_score_popup(popup_position: Vector2, amount: int, is_bonus: bool) -> void:
+	var popup: ScorePopup = SCORE_POPUP_SCENE.instantiate()
+	popup.position = popup_position
+	add_child(popup)
+	var color: Color = Color(1.0, 0.85, 0.2) if is_bonus else Color(1.0, 1.0, 1.0)
+	popup.setup("+%d" % amount, color)
 
 
 func _show_game_over() -> void:

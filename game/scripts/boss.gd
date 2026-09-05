@@ -6,7 +6,7 @@ extends Area2D
 ## 体力・移動速度・発射間隔・弾数（スプレッド）はMain（main.gd）が
 ## ステージ番号に応じて生成時に設定する。自機の弾がmax_health回当たると撃破される。
 
-signal defeated(score_value: int)
+signal defeated(score_value: int, position: Vector2)
 
 const EXPLOSION_SCENE: PackedScene = preload("res://scenes/explosion.tscn")
 const BULLET_SCENE: PackedScene = preload("res://scenes/boss_bullet.tscn")
@@ -66,7 +66,7 @@ func _on_area_entered(area: Area2D) -> void:
 	if health <= 0:
 		_spawn_explosion()
 		_spawn_power_up()
-		defeated.emit(score_value)
+		defeated.emit(score_value, global_position)
 		queue_free()
 
 

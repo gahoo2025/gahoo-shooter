@@ -7,7 +7,7 @@ extends Area2D
 
 enum Pattern { STRAIGHT, ZIGZAG, TRACKER }
 
-signal defeated(score_value: int)
+signal defeated(score_value: int, position: Vector2)
 
 const EXPLOSION_SCENE: PackedScene = preload("res://scenes/explosion.tscn")
 const BULLET_SCENE: PackedScene = preload("res://scenes/boss_bullet.tscn")
@@ -68,7 +68,7 @@ func _on_area_entered(area: Area2D) -> void:
 	_spawn_explosion()
 	if randf() < POWER_UP_DROP_CHANCE:
 		_spawn_power_up()
-	defeated.emit(score_value)
+	defeated.emit(score_value, global_position)
 	queue_free()
 
 

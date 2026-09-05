@@ -49,6 +49,21 @@ offset_right = 200.0
 offset_bottom = 94.0
 text = "HIGH SCORE: 0"
 
+[node name="ComboLabel" type="Label" parent="UI"]
+visible = false
+anchor_left = 0.5
+anchor_top = 0.0
+anchor_right = 0.5
+offset_left = -100.0
+offset_top = 10.0
+offset_right = 100.0
+offset_bottom = 40.0
+grow_horizontal = 2
+theme_override_font_sizes/font_size = 22
+theme_override_colors/font_color = Color(1.0, 0.85, 0.2, 1.0)
+horizontal_alignment = 1
+text = "COMBO x2"
+
 [node name="StageLabel" type="Label" parent="UI"]
 visible = false
 anchor_left = 0.5

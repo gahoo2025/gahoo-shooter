@@ -15,6 +15,8 @@ signal powerup_collected(power_type: int)
 @export var speed_boost_multiplier: float = 1.5
 
 const BLINK_INTERVAL := 0.1
+const SCORE_POPUP_SCENE: PackedScene = preload("res://scenes/score_popup.tscn")
+const PICKUP_RING_SCENE: PackedScene = preload("res://scenes/pickup_ring.tscn")
 
 var screen_size: Vector2
 var target_position: Vector2
@@ -122,6 +124,7 @@ func _on_area_entered(area: Area2D) -> void:
 ## 武器強化・スピードアップは自機側で完結させ、シールド・残機+1は
 ## ゲーム進行の状態に関わるためmain.gdへシグナルで通知する
 func _collect_powerup(power_type: int) -> void:
+	_spawn_pickup_effect(power_type)
 	match power_type:
 		PowerUp.Type.WEAPON:
 			weapon_powered = true
@@ -131,6 +134,34 @@ func _collect_powerup(power_type: int) -> void:
 			speed_timer.start()
 		_:
 			powerup_collected.emit(power_type)
+
+
+## アイテム取得時、種類ごとの色でリング＋ラベルのフィードバックを表示する（爆発以外の演出強化）
+func _spawn_pickup_effect(power_type: int) -> void:
+	var info: Dictionary = _pickup_info(power_type)
+	var ring: PickupRing = PICKUP_RING_SCENE.instantiate()
+	ring.position = position
+	get_parent().add_child(ring)
+	ring.setup(info["color"])
+
+	var popup: ScorePopup = SCORE_POPUP_SCENE.instantiate()
+	popup.position = position + Vector2(0, -20)
+	get_parent().add_child(popup)
+	popup.setup(info["text"], info["color"])
+
+
+func _pickup_info(power_type: int) -> Dictionary:
+	match power_type:
+		PowerUp.Type.WEAPON:
+			return {"text": "WEAPON UP!", "color": Color(1.0, 0.9, 0.2)}
+		PowerUp.Type.SHIELD:
+			return {"text": "SHIELD!", "color": Color(0.3, 0.85, 1.0)}
+		PowerUp.Type.SPEED:
+			return {"text": "SPEED UP!", "color": Color(0.35, 1.0, 0.45)}
+		PowerUp.Type.LIFE:
+			return {"text": "+1 LIFE", "color": Color(1.0, 0.35, 0.55)}
+		_:
+			return {"text": "", "color": Color(1.0, 1.0, 1.0)}
 
 
 ## ゲームの状態（タイトル/プレイ中/ゲームオーバー/クリア）に応じて
