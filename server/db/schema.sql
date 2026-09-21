@@ -1,0 +1,14 @@
+-- gahoo-shooter データベーススキーマ（初期版）
+--
+-- 現時点では単人用ゲームのため、必須のテーブルは無い。
+-- 将来スコア保存・ランキング機能を追加する際の参考として、想定テーブル例を残す。
+-- 実際の詳細仕様（スコア計算方法・ステージ構成等）が固まってから正式に定義すること。
+
+-- 例: ハイスコア記録用テーブル（未使用・コメントアウト）
+-- CREATE TABLE high_scores (
+--     id SERIAL PRIMARY KEY,
+--     player_name TEXT,
+--     score INTEGER NOT NULL,
+--     stage INTEGER,
+--     created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+-- );
